@@ -1,7 +1,7 @@
 import { call } from 'redux-saga/effects';
 import { pageResults } from 'synthetix-data';
 
-import { uniswapGraph, uniswapGraphV2 } from './sagas';
+import { uniswapGraph, uniswapGraphV2, curveGraph } from './sagas';
 import { CHARTS } from '../utils';
 
 export function* getExchangeDataHelper({
@@ -154,6 +154,48 @@ export function* getUniswapV2SethPrice(snxjs) {
 			max: 1,
 		})
 	);
+}
+
+export function* getCurveLatestSwapPrice(snxjs) {
+	const FALLBACK_PRICE = 1;
+	const toTokenData = yield call(() =>
+		pageResults({
+			api: curveGraph,
+			query: {
+				entity: 'tokens',
+				selection: {
+					where: { symbol: `\\"USDC\\"` },
+				},
+				properties: ['id'],
+			},
+			max: 1,
+		})
+	);
+	if (toTokenData && toTokenData.length > 0 && toTokenData[0].id) {
+		const swapData = yield call(() =>
+			pageResults({
+				api: curveGraph,
+				query: {
+					entity: 'swaps',
+					selection: {
+						where: {
+							fromToken: `\\"${snxjs.sUSD.contract.address.toLowerCase()}\\"`,
+							toToken: `\\"${toTokenData[0].id}\\"`,
+						},
+					},
+					properties: ['fromTokenAmount', 'toTokenAmount'],
+				},
+				max: 1,
+			})
+		);
+		return swapData &&
+			swapData.length > 0 &&
+			swapData[0].fromTokenAmount &&
+			swapData[0].fromTokenAmount
+			? Number(swapData[0].toTokenAmount) / 1e6 / (Number(swapData[0].fromTokenAmount) / 1e18)
+			: FALLBACK_PRICE;
+	}
+	return FALLBACK_PRICE;
 }
 
 export const synthSummaryUtilContract = {
