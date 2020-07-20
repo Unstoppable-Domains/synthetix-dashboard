@@ -190,7 +190,7 @@ export function* getCurveLatestSwapPrice(snxjs) {
 		);
 		return swapData &&
 			swapData.length > 0 &&
-			swapData[0].fromTokenAmount &&
+			swapData[0].toTokenAmount &&
 			swapData[0].fromTokenAmount
 			? Number(swapData[0].toTokenAmount) / 1e6 / (Number(swapData[0].fromTokenAmount) / 1e18)
 			: FALLBACK_PRICE;
